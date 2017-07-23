@@ -52,8 +52,7 @@ public class WelcomeActivity extends AppCompatActivity {
         btnNext = (Button) findViewById(R.id.btn_next);
 
 
-        // layouts of all welcome sliders
-        // add few more layouts if you want
+        // Layouts of all welcome sliders
         layouts = new int[]{
                 R.layout.welcomeslide1,
                 R.layout.welcomeslide2,

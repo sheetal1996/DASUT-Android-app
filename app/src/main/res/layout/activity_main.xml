@@ -129,6 +129,13 @@
         android:textStyle="italic"
         android:layout_below="@id/apps2"/>
 
+    <Button
+        android:id="@+id/push"
+        style="@style/Widget.AppCompat.Button.Colored"
+        android:layout_width="144dp"
+        android:layout_height="wrap_content"
+        android:text="SEND DATA" />
+
 </LinearLayout>
 
 </ScrollView>
