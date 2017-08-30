@@ -85,13 +85,32 @@
         android:text="wifi speed here" />
 
     <TextView
+        android:id="@+id/song_label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="21sp"
+        android:textColor="#ca00bcd4"
+        android:text="Songs: "
+        android:layout_below="@id/email2"/>
+
+    <TextView
+        android:id="@+id/songs"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="21sp"
+        android:textColor="#ca00bcd4"
+        android:text="List of Songs.... "
+        android:layout_below="@id/song_label"/>
+
+    <TextView
         android:id="@+id/apps"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="21sp"
         android:textColor="#ca00bcd4"
         android:text="Apps: "
-        android:layout_below="@id/email2"/>
+        android:layout_below="@id/songs"/>
+
     <TextView
         android:id="@+id/apps2"
         android:layout_width="wrap_content"
