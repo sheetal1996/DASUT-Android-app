@@ -85,6 +85,7 @@ public class WelcomeActivity extends AppCompatActivity {
                 if (current < layouts.length) {
                     // move to next screen
                     viewPager.setCurrentItem(current);
+
                 } else {
                     launchHomeScreen();
                 }

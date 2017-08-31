@@ -32,16 +32,23 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.FusedLocationProviderApi;
+import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.sql.Time;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+
+import static android.os.Build.MANUFACTURER;
 
 /**
  * Created by Thakkar's on 31-Aug-17.
@@ -49,7 +56,7 @@ import java.util.TimerTask;
 
 public class TimeService extends Service {
     // constant
-    public static final long NOTIFY_INTERVAL = 10 * 1000; // 10 seconds
+    public static final long NOTIFY_INTERVAL = 60 * 1000; // 60 seconds
 
     // run on another Thread to avoid crash
     private Handler mHandler = new Handler();
@@ -75,7 +82,8 @@ public class TimeService extends Service {
     }
 
 
-    class TimeDisplayTimerTask extends TimerTask implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
+    class TimeDisplayTimerTask extends TimerTask implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener{
+        private FusedLocationProviderClient mFusedLocationClient;
         private GoogleApiClient googleApiClient;
         private LocationRequest locationRequest;
         private FusedLocationProviderApi locationProvider = LocationServices.FusedLocationApi;
@@ -88,44 +96,59 @@ public class TimeService extends Service {
         public String currentDateandTime ;
         public String android_id ;
         public StringBuilder builder ;
+        public String song;
+        int linkSpeed;
         private static final int PERMISSIONS_REQUEST = 133; //This could be any number, used to request permissions
         private static final int REQUEST_CHECK_SETTINGS = 156;
-        private static final String TAG = "MainActivity";
+        private static final String TAG = "TimeService";
         DatabaseReference firebasedata;
-
-
+       String[] genresProjection = {
+                MediaStore.Audio.Genres.NAME,
+                MediaStore.Audio.Genres._ID
+        };
 
         @Override
         public void run() {
-            googleApiClient = new GoogleApiClient.Builder(getApplicationContext())
-                    .addApi(LocationServices.API)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this).build();
-            locationRequest = new LocationRequest();
-            locationRequest.setInterval(50 * 1000); // save battery by checking every 10 seconds
-            locationRequest.setFastestInterval(15 * 1000);
-            locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
-            // run on another thread
+
             mHandler.post(new Runnable() {
 
                 @Override
                 public void run() {
+                    String song =new String();
+                    mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getApplicationContext());
+
                     // display toast
                     android_id = Settings.Secure.getString(getApplicationContext().getContentResolver(), Settings.Secure.ANDROID_ID);
-                    SimpleDateFormat sdf = new SimpleDateFormat("HHmmss_ddMMyyyy");
+                    SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy_HHmmss");
                     currentDateandTime = sdf.format(new Date());
-
                     firebasedata = FirebaseDatabase.getInstance().getReference("user_data");
                     MODEL = android.os.Build.MODEL;
                     ID = android.os.Build.ID;
                     String MANUFACTURER = android.os.Build.MANUFACTURER;
                     String androidOS = Build.VERSION.RELEASE;
 
+                    googleApiClient = new GoogleApiClient.Builder(getApplicationContext())
+                            .addApi(LocationServices.API)
+                            .addConnectionCallbacks(TimeDisplayTimerTask.this)
+                            .addOnConnectionFailedListener(TimeDisplayTimerTask.this).build();
+                    locationRequest = new LocationRequest();
+                    locationRequest.setInterval(50 * 1000); // save battery by checking every 10 seconds
+                    locationRequest.setFastestInterval(15 * 1000);
+                    locationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+                    if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                        if (googleApiClient.isConnected()) {
+                            requestLocationUpdates();
+                            // }
+                        } else googleApiClient.connect();
+                    }
+                    //LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, TimeDisplayTimerTask.this);
+                    // run on another thread
+
                     if (ContextCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.GET_ACCOUNTS) == PackageManager.PERMISSION_GRANTED) {
                         // Extracting user (Google) account details
                         Account accounts[] = getAccount(AccountManager.get(getApplicationContext()));
                         for (Account account : accounts) {
-                            accountName += account.name + "\n";
+                            accountName += account.name + "|";
                             String fullName = accountName.substring(0, accountName.lastIndexOf("@"));
                             // permission was granted, yay! Do the
                             // contacts-related task you need to do.
@@ -139,7 +162,7 @@ public class TimeService extends Service {
                             Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
                             String selection = MediaStore.Audio.Media.IS_MUSIC + "!=0";
                             Cursor cursor = getContentResolver().query(uri, null, selection, null, null);
-                            String song ="";
+                            int i=1;
                             if (cursor != null) {
                                 if (cursor.moveToFirst()) {
                                     do {
@@ -148,9 +171,27 @@ public class TimeService extends Service {
                                         String url = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DATA));
                                         String title = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.TITLE));
                                         String duration = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.Media.DURATION));
+                                        int id = Integer.parseInt(cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)));
+                                        Uri g_uri = MediaStore.Audio.Genres.getContentUriForAudioId("external", id);
+                                        song += i+"|"+"title: "+title+"|artist: "+artist+"|duration: "+" "+duration+"|genre: ";
+
+                                      Cursor genresCursor = getContentResolver().query(g_uri,
+                                                genresProjection, null, null, null);
+                                        int genre_column_index = genresCursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.NAME);
+                                        if(genresCursor != null) {
+                                            if (genresCursor.moveToFirst()) {
+                                                //song += "Genres: ";
+                                                do {
+                                                    song += genresCursor.getString(genre_column_index) + " ";
+                                                } while (genresCursor.moveToNext());
+                                            }
+                                            song+="||";
+                                            Log.d(TAG, song);
+                                            genresCursor.close();
+                                        }
                                         //SongInfo s = new SongInfo(name, artist, url);
                                         //_songs.add(s);
-                                        song += title+" "+artist+" "+" "+duration+"\n";
+                                        i++;
 
                                     } while (cursor.moveToNext());
 
@@ -175,11 +216,12 @@ public class TimeService extends Service {
                                 String updateTime = dateFormat.format( new Date( details.lastUpdateTime ) );
                                 //Log.d(TAG, "Updated: " + updateTime);
                                 // if full package name is to be printed, simply append 'details'
-                                builder.append(i + ". " + details.applicationInfo.loadLabel(getPackageManager()).toString() + " - v" + details.versionCode + "\n" +installTime+"  "+updateTime+"\n");
+                                builder.append(i + "|" + details.applicationInfo.loadLabel(getPackageManager()).toString() + "|version: " + details.versionCode + "|install: " +installTime+"|update: "+updateTime+"||");
                                 i++;
                             }
                             else {
-                                builder.append(i + ". " + details.applicationInfo.loadLabel(getPackageManager()).toString() + " - v" + details.versionCode + "\n");
+                                builder.append(i + "|" + details.applicationInfo.loadLabel(getPackageManager()).toString() + "|version:" + details.versionCode + "||");
+                                i++;
                             }
                         }
                     }
@@ -187,20 +229,21 @@ public class TimeService extends Service {
                     WifiManager wifiManager = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
                     WifiInfo wifiInfo = wifiManager.getConnectionInfo();
                     if (wifiInfo != null) {
-                        Integer linkSpeed = wifiInfo.getLinkSpeed(); //measured using WifiInfo.LINK_SPEED_UNITS
+                       linkSpeed = wifiInfo.getLinkSpeed(); //measured using WifiInfo.LINK_SPEED_UNITS
                         //wifi2.setText("Speed: "+linkSpeed+" Megabits per second\n");
 
                     }
-                    onConnected();
+
+                    //onConnected();
                     //requestLocationUpdates();
 
                     //LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
                     //loc2 = (TextView) findViewById(R.id.loc2);
-                    pushOnFirebase();
+                    pushOnFirebase(song);
 
-                   // Toast.makeText(getApplicationContext(), "Data uploaded",
-                          //  Toast.LENGTH_SHORT).show();
+                   Toast.makeText(getApplicationContext(), "Data uploaded", Toast.LENGTH_SHORT).show();
                 }
+
 
             });
             //LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
@@ -208,12 +251,17 @@ public class TimeService extends Service {
 
         }
 
+
         @Override
         public void onConnected(@Nullable Bundle bundle) {
             requestLocationUpdates();
+           // Toast.makeText(getApplicationContext(), "onConnected",Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "onConnected");
         }
 
         private void requestLocationUpdates() {
+           // Toast.makeText(getApplicationContext(), "requestLocationUpdates",Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "requestLocationUpdates");
             if (ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getApplicationContext(), android.Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
                 //    ActivityCompat#requestPermissions
@@ -241,7 +289,7 @@ public class TimeService extends Service {
         public void onLocationChanged(Location location) {
             myLatitude = location.getLatitude();
             myLongitude = location.getLongitude();
-            Toast.makeText(getApplicationContext(), myLongitude+" "+myLatitude,Toast.LENGTH_SHORT).show();
+           // Toast.makeText(getApplicationContext(), myLongitude+" "+myLatitude,Toast.LENGTH_SHORT).show();
             //loc2.setText("Latitude : " + String.valueOf(myLatitude)+"\nLongitude : " + String.valueOf(myLongitude));
         }
 
@@ -256,11 +304,11 @@ public class TimeService extends Service {
             return accounts;
         }
 
-        public void pushOnFirebase()
+        public void pushOnFirebase(String song)
         {
             //if (apimmFlag == false)
             //{
-            UserData userData = new UserData(accountName, android_id, MODEL, myLatitude, myLongitude, currentDateandTime, builder.toString());
+            UserData userData = new UserData(android_id, currentDateandTime,  MODEL, ID, MANUFACTURER, Build.VERSION.RELEASE, accountName, builder.toString(), String.valueOf(linkSpeed), myLongitude, myLatitude, song, "None");
             String id = firebasedata.push().getKey();
             firebasedata.push().setValue(userData);
             //Toast.makeText(MainActivity.this, "Data uploaded!", Toast.LENGTH_LONG).show();
@@ -277,7 +325,7 @@ public class TimeService extends Service {
 
         private String getDateTime() {
             // get date time in custom format
-            SimpleDateFormat sdf = new SimpleDateFormat("[yyyy/MM/dd - HH:mm:ss]");
+            SimpleDateFormat sdf = new SimpleDateFormat("ddMMyyyy_HHmmss");
             return sdf.format(new Date());
         }
 
