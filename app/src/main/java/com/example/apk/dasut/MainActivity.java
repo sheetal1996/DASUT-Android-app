@@ -91,7 +91,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        startService(new Intent(this, TimeService.class));
+
         Context context = this;
 
         email = (TextView) findViewById(R.id.email2);
@@ -112,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             @Override
             public void onClick(View view) {
                 // Pushing data up there
+                startService(new Intent(getApplicationContext(), TimeService.class));
                 pushOnFirebase();
             }
         });
