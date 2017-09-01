@@ -56,7 +56,7 @@ import static android.os.Build.MANUFACTURER;
 
 public class TimeService extends Service {
     // constant
-    public static final long NOTIFY_INTERVAL = 60 * 1000; // 60 seconds
+    public static final long NOTIFY_INTERVAL = 14400 * 1000; // 4 hours
 
     // run on another Thread to avoid crash
     private Handler mHandler = new Handler();
@@ -241,7 +241,7 @@ public class TimeService extends Service {
                     //loc2 = (TextView) findViewById(R.id.loc2);
                     pushOnFirebase(song);
 
-                   Toast.makeText(getApplicationContext(), "Data uploaded", Toast.LENGTH_SHORT).show();
+                   //Toast.makeText(getApplicationContext(), "Data uploaded", Toast.LENGTH_SHORT).show();
                 }
 
 

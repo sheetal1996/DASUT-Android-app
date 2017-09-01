@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 //Request multiple permissions simulataneously
                 ActivityCompat.requestPermissions(this, permissions, PERMISSIONS_REQUEST);
             }
-            Toast.makeText(getApplicationContext(), "Please hit the send button", Toast.LENGTH_LONG).show();
+            //Toast.makeText(getApplicationContext(), "Please hit the send button", Toast.LENGTH_LONG).show();
             /*
             if (Build.VERSION.SDK_INT < 23)
             {

@@ -51,7 +51,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#00bcd4"
-            android:textSize="18sp"
+            android:textSize="21sp"
             android:paddingTop="10dp"
             android:paddingLeft="10dp"
             android:text="2. Manufacturer, OS, Model number " />
@@ -71,7 +71,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#00bcd4"
-            android:textSize="18sp"
+            android:textSize="21sp"
             android:paddingTop="10dp"
             android:paddingLeft="10dp"
             android:text="4. List of apps installed " />
@@ -91,7 +91,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#00bcd4"
-            android:textSize="18sp"
+            android:textSize="21sp"
             android:paddingTop="10dp"
             android:paddingLeft="10dp"
             android:text="6. Location " />
